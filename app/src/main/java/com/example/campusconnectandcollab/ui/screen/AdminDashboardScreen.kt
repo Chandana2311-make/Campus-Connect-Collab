@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.campusconnectandcollab.ui.models.Event
@@ -82,13 +83,15 @@ fun AdminDashboardScreen(navController: NavHostController) {
                     AdminEventCard(
                         event = event,
                         onEdit = { editEvent = it; showAddDialog = true },
-                        onDelete = { events = events.filter { e -> e.id != it.id }.toMutableList() }
+                        onDelete = {
+                            events = events.filter { e -> e.id != it.id }.toMutableList()
+                        }
                     )
                 }
             }
         }
 
-        // Show Add/Edit Dialog
+        // Add/Edit dialog
         if (showAddDialog) {
             AddEditEventDialog(
                 event = editEvent,
@@ -107,17 +110,45 @@ fun AdminDashboardScreen(navController: NavHostController) {
 }
 
 @Composable
-fun AdminEventCard(event: Event, onEdit: (Event) -> Unit, onDelete: (Event) -> Unit) {
+fun AdminEventCard(
+    event: Event,
+    onEdit: (Event) -> Unit,
+    onDelete: (Event) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
     Card(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+
+            // Title
             Text(text = event.title, style = MaterialTheme.typography.titleMedium)
-            Text(text = event.date)
-            Text(text = event.venue)
+
+            // Date & Venue
+            Text(text = event.date, style = MaterialTheme.typography.bodyMedium)
+            Text(text = event.venue, style = MaterialTheme.typography.bodyMedium)
+
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Description (collapsible)
+            Text(
+                text = event.description,
+                maxLines = if (expanded) Int.MAX_VALUE else 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            TextButton(
+                onClick = { expanded = !expanded },
+            ) {
+                Text(if (expanded) "Show Less" else "Show More")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Buttons
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Button(onClick = { onEdit(event) }) { Text("Edit") }
                 Button(onClick = { onDelete(event) }) { Text("Delete") }
