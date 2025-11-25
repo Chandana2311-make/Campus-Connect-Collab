@@ -6,10 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
-import com.example.campusconnectandcollab.ui.navigation.AppNavGraph
 import com.example.campusconnectandcollab.ui.theme.CampusConnectAndCollabTheme
 
 class MainActivity : ComponentActivity() {
@@ -17,18 +17,20 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             CampusConnectAndCollabTheme {
+
                 val navController = rememberNavController()
 
-                // Use Scaffold if you want a top bar, bottom bar, etc.
-                androidx.compose.material3.Scaffold { paddingValues ->
-                    // Apply paddingValues to root container to fix the warning
+                Scaffold { paddingValues ->
                     Surface(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(paddingValues),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        AppNavGraph(navController = navController)
+                        // ✅ Use fully-qualified name to avoid ambiguity
+                        com.example.campusconnectandcollab.ui.navigation.AppNavGraph(
+                            navController = navController
+                        )
                     }
                 }
             }
