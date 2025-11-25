@@ -6,8 +6,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.campusconnectandcollab.LoginScreen
 import com.example.campusconnectandcollab.ui.screens.AdminDashboardScreen
-import com.example.campusconnectandcollab.ui.screens.StudentDashboardScreen
 import com.example.campusconnectandcollab.ui.screens.AdminEventsScreen
+import com.example.campusconnectandcollab.ui.screens.StudentDashboardScreen   // ✅ FIXED IMPORT
 
 @Composable
 fun AppNavGraph(navController: NavHostController) {
@@ -35,16 +35,18 @@ fun AppNavGraph(navController: NavHostController) {
         // STUDENT DASHBOARD
         composable(AppRoute.StudentDashboard.route) {
             StudentDashboardScreen(
-                onEventsClick = TODO()
+                onEventsClick = {
+                    navController.navigate(AppRoute.EventList.route)
+                }
             )
         }
 
-        // ADMIN DASHBOARD (NO EXTRA PARAMETERS)
+        // ADMIN DASHBOARD
         composable(AppRoute.AdminDashboard.route) {
             AdminDashboardScreen(navController)
         }
 
-        // ADMIN EVENT LIST SCREEN
+        // ADMIN EVENT LIST
         composable(AppRoute.EventList.route) {
             AdminEventsScreen(navController)
         }
