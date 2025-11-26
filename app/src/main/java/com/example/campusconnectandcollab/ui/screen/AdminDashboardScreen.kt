@@ -8,56 +8,28 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.campusconnectandcollab.ui.models.Event
+import com.example.campusconnectandcollab.ui.viewmodels.EventViewModel
 
 @Composable
-fun AdminDashboardScreen(navController: NavHostController) {
+fun AdminDashboardScreen(
+    navController: NavHostController,
+    eventViewModel: EventViewModel = viewModel()
+) {
+    val events by eventViewModel.events.collectAsState()
 
-    // Sample mutable list of events
-    var events by remember {
-        mutableStateOf(
-            mutableListOf(
-                Event(
-                    id = "1",
-                    name = "Hackathon 2025",
-                    title = "Hackathon 2025",
-                    description = "A coding competition for students across the campus.",
-                    date = "Dec 5 · 10:00 AM",
-                    venue = "Auditorium A",
-                    imageUrl = "https://yourimageurl.com/hackathon.jpg"
-                ),
-                Event(
-                    id = "2",
-                    name = "RoboRace Championship",
-                    title = "RoboRace Championship",
-                    description = "Robot racing competition for all engineering students.",
-                    date = "Dec 12 · 11:00 AM",
-                    venue = "Mechanical Block",
-                    imageUrl = "https://yourimageurl.com/roborace.jpg"
-                ),
-                Event(
-                    id = "3",
-                    name = "Coding Contest",
-                    title = "Coding Contest",
-                    description = "Competitive programming contest for CSE students.",
-                    date = "Jan 3 · 9:00 AM",
-                    venue = "CSE Lab",
-                    imageUrl = "https://yourimageurl.com/codingcontest.jpg"
-                )
-            )
-        )
-    }
-
-    var showAddDialog by remember { mutableStateOf(false) }
-    var editEvent by remember { mutableStateOf<Event?>(null) }
+    var showDialog by remember { mutableStateOf(false) }
+    var eventToEdit by remember { mutableStateOf<Event?>(null) }
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { editEvent = null; showAddDialog = true }) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Event")
+            FloatingActionButton(
+                onClick = { eventToEdit = null; showDialog = true }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Event")
             }
         }
     ) { paddingValues ->
@@ -68,41 +40,32 @@ fun AdminDashboardScreen(navController: NavHostController) {
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            Text(
-                text = "Admin Dashboard",
-                style = MaterialTheme.typography.titleLarge
-            )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Text("Admin Dashboard", style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.height(16.dp))
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(events) { event ->
                     AdminEventCard(
                         event = event,
-                        onEdit = { editEvent = it; showAddDialog = true },
-                        onDelete = {
-                            events = events.filter { e -> e.id != it.id }.toMutableList()
-                        }
+                        onEdit = {
+                            eventToEdit = it
+                            showDialog = true
+                        },
+                        onDelete = { eventViewModel.deleteEvent(it) }
                     )
                 }
             }
         }
 
-        // Add/Edit dialog
-        if (showAddDialog) {
+        if (showDialog) {
             AddEditEventDialog(
-                event = editEvent,
-                onDismiss = { showAddDialog = false },
-                onSave = { newEvent ->
-                    events = if (editEvent != null) {
-                        events.map { if (it.id == newEvent.id) newEvent else it }.toMutableList()
-                    } else {
-                        (events + newEvent).toMutableList()
-                    }
-                    showAddDialog = false
+                event = eventToEdit,
+                onDismiss = { showDialog = false },
+                onSave = { e ->
+                    if (eventToEdit == null) eventViewModel.addEvent(e)
+                    else eventViewModel.updateEvent(e)
+                    showDialog = false
                 }
             )
         }
@@ -115,41 +78,24 @@ fun AdminEventCard(
     onEdit: (Event) -> Unit,
     onDelete: (Event) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(8.dp)
+        elevation = CardDefaults.cardElevation(6.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(Modifier.padding(16.dp)) {
 
-            // Title
-            Text(text = event.title, style = MaterialTheme.typography.titleMedium)
+            Text(event.title, style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(4.dp))
 
-            // Date & Venue
-            Text(text = event.date, style = MaterialTheme.typography.bodyMedium)
-            Text(text = event.venue, style = MaterialTheme.typography.bodyMedium)
+            Text(event.date)
+            Text(event.venue)
+            Text("Max Participants: ${event.maxParticipants}")
+            Spacer(Modifier.height(8.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Text(event.description)
+            Spacer(Modifier.height(12.dp))
 
-            // Description (collapsible)
-            Text(
-                text = event.description,
-                maxLines = if (expanded) Int.MAX_VALUE else 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodySmall
-            )
-
-            TextButton(
-                onClick = { expanded = !expanded },
-            ) {
-                Text(if (expanded) "Show Less" else "Show More")
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Buttons
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(onClick = { onEdit(event) }) { Text("Edit") }
                 Button(onClick = { onDelete(event) }) { Text("Delete") }
             }

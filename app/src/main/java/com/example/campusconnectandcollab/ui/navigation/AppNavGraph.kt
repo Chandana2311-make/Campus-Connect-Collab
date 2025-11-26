@@ -7,7 +7,8 @@ import androidx.navigation.compose.composable
 import com.example.campusconnectandcollab.LoginScreen
 import com.example.campusconnectandcollab.ui.screens.AdminDashboardScreen
 import com.example.campusconnectandcollab.ui.screens.AdminEventsScreen
-import com.example.campusconnectandcollab.ui.screens.StudentDashboardScreen   // ✅ FIXED IMPORT
+import com.example.campusconnectandcollab.ui.screens.StudentDashboardScreen
+import com.example.campusconnectandcollab.ui.screens.StudentEventsScreen
 
 @Composable
 fun AppNavGraph(navController: NavHostController) {
@@ -36,9 +37,14 @@ fun AppNavGraph(navController: NavHostController) {
         composable(AppRoute.StudentDashboard.route) {
             StudentDashboardScreen(
                 onEventsClick = {
-                    navController.navigate(AppRoute.EventList.route)
+                    navController.navigate(AppRoute.StudentEventList.route)
                 }
             )
+        }
+
+        // STUDENT EVENT LIST (READ-ONLY)
+        composable(AppRoute.StudentEventList.route) {
+            StudentEventsScreen(navController)
         }
 
         // ADMIN DASHBOARD
@@ -46,9 +52,26 @@ fun AppNavGraph(navController: NavHostController) {
             AdminDashboardScreen(navController)
         }
 
-        // ADMIN EVENT LIST
-        composable(AppRoute.EventList.route) {
+        // ADMIN EVENT LIST (WITH ADD/EDIT/DELETE)
+        composable(AppRoute.AdminEventList.route) {
             AdminEventsScreen(navController)
+        }
+
+        // EVENT DETAILS
+        composable(AppRoute.EventDetail.route) { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getString("eventId")
+            // TODO: Add your EventDetailScreen(eventId)
+        }
+
+        // ADD EVENT (ADMIN ONLY)
+        composable(AppRoute.AddEvent.route) {
+            // TODO: Add AddEventScreen(navController)
+        }
+
+        // EDIT EVENT (ADMIN ONLY)
+        composable(AppRoute.EditEvent.route) { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getString("eventId")
+            // TODO: Add EditEventScreen(navController, eventId)
         }
     }
 }
