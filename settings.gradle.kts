@@ -1,4 +1,9 @@
 pluginManagement {
+    plugins {
+        // Required for Kotlin 2.0 + Jetpack Compose
+        id("org.jetbrains.kotlin.plugin.compose") version "2.0.0"
+    }
+
     repositories {
         google {
             content {
@@ -11,6 +16,7 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -21,4 +27,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "CampusConnectAndCollab"
 include(":app")
- 

@@ -1,6 +1,7 @@
 package com.example.campusconnectandcollab.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -9,69 +10,51 @@ import com.example.campusconnectandcollab.ui.screens.AdminDashboardScreen
 import com.example.campusconnectandcollab.ui.screens.AdminEventsScreen
 import com.example.campusconnectandcollab.ui.screens.StudentDashboardScreen
 import com.example.campusconnectandcollab.ui.screens.StudentEventsScreen
+import com.example.campusconnectandcollab.ui.viewmodels.EventViewModel
 
 @Composable
 fun AppNavGraph(navController: NavHostController) {
+    val eventViewModel: EventViewModel = viewModel()
 
-    NavHost(
-        navController = navController,
-        startDestination = AppRoute.Login.route
-    ) {
+    NavHost(navController = navController, startDestination = "login") {
 
-        // LOGIN SCREEN
-        composable(AppRoute.Login.route) {
+        // ---------- LOGIN ----------
+        composable("login") {
             LoginScreen { email, password, isAdmin ->
                 if (isAdmin) {
-                    navController.navigate(AppRoute.AdminDashboard.route) {
-                        popUpTo(AppRoute.Login.route) { inclusive = true }
+                    navController.navigate("admin_dashboard") {
+                        popUpTo("login") { inclusive = true }
                     }
                 } else {
-                    navController.navigate(AppRoute.StudentDashboard.route) {
-                        popUpTo(AppRoute.Login.route) { inclusive = true }
+                    navController.navigate("student_dashboard") {
+                        popUpTo("login") { inclusive = true }
                     }
                 }
             }
         }
 
-        // STUDENT DASHBOARD
-        composable(AppRoute.StudentDashboard.route) {
-            StudentDashboardScreen(
-                onEventsClick = {
-                    navController.navigate(AppRoute.StudentEventList.route)
-                }
-            )
+        // ---------- STUDENT ----------
+        composable("student_dashboard") {
+            StudentDashboardScreen(navController, eventViewModel)
         }
 
-        // STUDENT EVENT LIST (READ-ONLY)
-        composable(AppRoute.StudentEventList.route) {
-            StudentEventsScreen(navController)
+        composable("student_event_list") {
+            StudentEventsScreen(navController, eventViewModel)
         }
 
-        // ADMIN DASHBOARD
-        composable(AppRoute.AdminDashboard.route) {
-            AdminDashboardScreen(navController)
+        // ---------- ADMIN ----------
+        composable("admin_dashboard") {
+            AdminDashboardScreen(navController, eventViewModel)
         }
 
-        // ADMIN EVENT LIST (WITH ADD/EDIT/DELETE)
-        composable(AppRoute.AdminEventList.route) {
-            AdminEventsScreen(navController)
+        composable("admin_event_list") {
+            AdminEventsScreen(navController, eventViewModel)
         }
 
-        // EVENT DETAILS
-        composable(AppRoute.EventDetail.route) { backStackEntry ->
+        // ---------- EVENT DETAIL ----------
+        composable("event_detail/{eventId}") { backStackEntry ->
             val eventId = backStackEntry.arguments?.getString("eventId")
-            // TODO: Add your EventDetailScreen(eventId)
-        }
-
-        // ADD EVENT (ADMIN ONLY)
-        composable(AppRoute.AddEvent.route) {
-            // TODO: Add AddEventScreen(navController)
-        }
-
-        // EDIT EVENT (ADMIN ONLY)
-        composable(AppRoute.EditEvent.route) { backStackEntry ->
-            val eventId = backStackEntry.arguments?.getString("eventId")
-            // TODO: Add EditEventScreen(navController, eventId)
+            // TODO: EventDetailScreen(eventId, eventViewModel)
         }
     }
 }

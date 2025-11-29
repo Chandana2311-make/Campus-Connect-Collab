@@ -10,9 +10,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.campusconnectandcollab.ui.navigation.AppRoute
+import com.example.campusconnectandcollab.ui.viewmodels.EventViewModel
 
 @Composable
-fun AdminEventsScreen(navController: NavController) {
+fun AdminEventsScreen(navController: NavController, eventViewModel: EventViewModel) {
 
     Column(
         modifier = Modifier

@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.campusconnectandcollab.ui.viewmodels.EventViewModel
 
 // TEMP DATA MODEL (replace later with your real Event model)
 data class Event(
@@ -22,7 +23,7 @@ data class Event(
 )
 
 @Composable
-fun StudentEventsScreen(navController: NavHostController) {
+fun StudentEventsScreen(navController: NavHostController, eventViewModel: EventViewModel) {
 
     val context = LocalContext.current
 

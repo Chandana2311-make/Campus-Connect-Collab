@@ -1,5 +1,6 @@
 package com.example.campusconnectandcollab
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -12,6 +13,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -22,39 +24,44 @@ import androidx.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(onLoginClick: (String, String, Boolean) -> Unit = { _, _, _ -> }) {
+fun LoginScreen(
+    onLoginClick: (String, String, String) -> Unit = { _, _, _ -> }
+) {
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    // System selection
+    var eventSelected by remember { mutableStateOf(false) }
+    var lostFoundSelected by remember { mutableStateOf(false) }
+
+    // Admin selection
     var isAdmin by remember { mutableStateOf(false) }
 
-    // Vibrant Gradient Background
+    val context = LocalContext.current
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF6C63FF),   // Vibrant Purple
-                        Color(0xFFFF6584)    // Pink-Red Neon
+                        Color(0xFF6C63FF),
+                        Color(0xFFFF6584)
                     )
                 )
             )
     ) {
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
             Spacer(modifier = Modifier.height(60.dp))
 
-            // Logo Circle
             Box(
-                modifier = Modifier
-                    .size(100.dp)
+                modifier = Modifier.size(100.dp)
                     .clip(CircleShape)
                     .background(Color.White.copy(alpha = 0.9f)),
                 contentAlignment = Alignment.Center
@@ -69,9 +76,8 @@ fun LoginScreen(onLoginClick: (String, String, Boolean) -> Unit = { _, _, _ -> }
 
             Spacer(modifier = Modifier.height(15.dp))
 
-            // Title
             Text(
-                text = "Campus Connect & Collab",
+                "Campus Connect & Collab",
                 fontSize = 24.sp,
                 color = Color.White,
                 fontWeight = FontWeight.ExtraBold,
@@ -79,18 +85,15 @@ fun LoginScreen(onLoginClick: (String, String, Boolean) -> Unit = { _, _, _ -> }
             )
 
             Text(
-                text = "Login to continue",
+                "Login to continue",
                 fontSize = 15.sp,
                 color = Color.White.copy(alpha = 0.9f)
             )
 
             Spacer(modifier = Modifier.height(30.dp))
 
-            // Main Card
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(5.dp),
+                modifier = Modifier.fillMaxWidth().padding(5.dp),
                 shape = RoundedCornerShape(20.dp),
                 elevation = CardDefaults.cardElevation(12.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
@@ -101,7 +104,6 @@ fun LoginScreen(onLoginClick: (String, String, Boolean) -> Unit = { _, _, _ -> }
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
-                    // Email Field
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
@@ -112,7 +114,6 @@ fun LoginScreen(onLoginClick: (String, String, Boolean) -> Unit = { _, _, _ -> }
 
                     Spacer(modifier = Modifier.height(15.dp))
 
-                    // Password Field
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it },
@@ -123,26 +124,77 @@ fun LoginScreen(onLoginClick: (String, String, Boolean) -> Unit = { _, _, _ -> }
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // Admin Checkbox
+                    // SYSTEM SELECTION → Event
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = isAdmin, onCheckedChange = { isAdmin = it })
-                        Text("Login as Admin", fontSize = 15.sp)
+                        Checkbox(
+                            checked = eventSelected,
+                            onCheckedChange = {
+                                eventSelected = it
+                                if (it) lostFoundSelected = false
+                            }
+                        )
+                        Text("Event Updates", fontSize = 15.sp)
+                    }
+
+                    // SYSTEM SELECTION → Lost & Found
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = lostFoundSelected,
+                            onCheckedChange = {
+                                lostFoundSelected = it
+                                if (it) {
+                                    eventSelected = false
+                                    isAdmin = false   // admin not allowed here
+                                }
+                            }
+                        )
+                        Text("Lost & Found", fontSize = 15.sp)
+                    }
+
+                    // ADMIN OPTION (only if Event selected)
+                    if (eventSelected) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = isAdmin,
+                                onCheckedChange = { isAdmin = it }
+                            )
+                            Text("Login as Admin (Event Organiser)", fontSize = 15.sp)
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(25.dp))
 
-                    // Vibrant Login Button
                     Button(
-                        onClick = { onLoginClick(email, password, isAdmin) },
+                        onClick = {
+
+                            // Validation rules
+                            when {
+                                !eventSelected && !lostFoundSelected ->
+                                    Toast.makeText(context, "Select Event or Lost & Found", Toast.LENGTH_SHORT).show()
+
+                                eventSelected && lostFoundSelected ->
+                                    Toast.makeText(context, "Select only ONE option", Toast.LENGTH_SHORT).show()
+
+                                lostFoundSelected && isAdmin ->
+                                    Toast.makeText(context, "Admin valid only for Event Updates", Toast.LENGTH_SHORT).show()
+
+                                else -> {
+                                    val system =
+                                        if (eventSelected && isAdmin) "event_admin"
+                                        else if (eventSelected) "event_user"
+                                        else "lostfound"
+
+                                    onLoginClick(email, password, system)
+                                }
+                            }
+                        },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1A1A40)   // Navy Blue
+                            containerColor = Color(0xFF1A1A40)
                         ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text("Login", fontSize = 19.sp, color = Color(0xFF4EE1C1)) // Neon Cyan
+                        Text("Login", fontSize = 19.sp, color = Color(0xFF4EE1C1))
                     }
                 }
             }
