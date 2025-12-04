@@ -3,16 +3,21 @@ package com.example.campusconnectandcollab.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+// FIX: The broken import statement has been separated into two correct lines
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.campusconnectandcollab.ui.models.Event
+import com.example.campusconnectandcollab.ui.screen.AddEditEventDialog
 import com.example.campusconnectandcollab.ui.viewmodels.EventViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,7 +41,7 @@ fun AdminDashboardScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { eventViewModel.refreshEvents() }) {
+                    IconButton(onClick = { eventViewModel.fetchEvents() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                 }
@@ -44,47 +49,56 @@ fun AdminDashboardScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { eventToEdit = null; showDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add")
+                Icon(Icons.Default.Add, contentDescription = "Add Event")
             }
         }
     ) { paddingValues ->
-        Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp)) {
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(16.dp)) {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(events) { ev ->
-                    AdminEventCard(
-                        event = ev,
+                items(events) { event ->
+                    AdminEventEventCard(
+                        event = event,
                         onEdit = { eventToEdit = it; showDialog = true },
-                        onDelete = { eventViewModel.deleteEvent(it.id) }
+                        onDelete = { eventViewModel.deleteEvent(event.id) }
                     )
                 }
             }
         }
 
         if (showDialog) {
-            AddEditEventDialog(event = eventToEdit, onDismiss = { showDialog = false }, onSave = { e ->
-                if (eventToEdit == null) eventViewModel.addEvent(e) else eventViewModel.updateEvent(e)
-                eventViewModel.refreshEvents()
-                showDialog = false
-            })
+            AddEditEventDialog(
+                event = eventToEdit,
+                onDismiss = { showDialog = false },
+                onSave = { event ->
+                    if (eventToEdit == null) {
+                        eventViewModel.addEvent(event)
+                    } else {
+                        eventViewModel.updateEvent(event)
+                    }
+                    showDialog = false
+                }
+            )
         }
     }
 }
 
 @Composable
-fun AdminEventCard(event: Event, onEdit: (Event) -> Unit, onDelete: (Event) -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(6.dp)) {
+fun AdminEventEventCard(event: Event, onEdit: (Event) -> Unit, onDelete: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(4.dp)) {
         Column(Modifier.padding(16.dp)) {
-            Text(event.title, style = MaterialTheme.typography.titleMedium)
+            Text(event.eventName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
-            Text(event.date)
-            Text(event.venue)
-            Text("Max Participants: ${event.maxParticipants}")
+            Text("Date: ${event.eventDate}", style = MaterialTheme.typography.bodyMedium)
+            Text("Slots: ${event.registeredCount} / ${event.totalSlots}", style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(8.dp))
-            Text(event.description)
-            Spacer(Modifier.height(12.dp))
+            Text(event.eventDescription, style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(onClick = { onEdit(event) }) { Text("Edit") }
-                Button(onClick = { onDelete(event) }) { Text("Delete") }
+                Button(onClick = { onDelete() }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text("Delete") }
             }
         }
     }

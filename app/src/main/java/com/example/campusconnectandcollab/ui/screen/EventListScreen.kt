@@ -1,67 +1,148 @@
-package com.example.campusconnectandcollab.ui.screens
+package com.example.campusconnectandcollab.ui.screen
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.campusconnectandcollab.ui.models.Event // Correct import path
 import com.example.campusconnectandcollab.ui.navigation.AppRoute
 import com.example.campusconnectandcollab.ui.viewmodels.EventViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminEventsScreen(navController: NavController, eventViewModel: EventViewModel) {
+fun EventListScreen(
+    navController: NavController,
+    eventViewModel: EventViewModel = viewModel(),
+    isAdmin: Boolean // We pass this flag to show/hide admin controls
+) {
+    val events by eventViewModel.events.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-
-        Text(
-            text = "Event Management",
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Add Event Button
-        Button(
-            onClick = { navController.navigate(AppRoute.AddEvent.route) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = "Add New Event")
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Upcoming Events") }
+            )
+        },
+        floatingActionButton = {
+            if (isAdmin) {
+                FloatingActionButton(
+                    onClick = { navController.navigate(AppRoute.AddEvent.route) },
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "Add New Event")
+                }
+            }
         }
+    ) { paddingValues ->
+        if (events.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Fetching events...")
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(vertical = 16.dp)
+            ) {
+                items(events) { event ->
+                    EventCard(
+                        event = event,
+                        onJoinClick = { eventId ->
+                            // TODO: Implement logic for joining an event using eventId
+                        },
+                        isAdmin = isAdmin
+                    )
+                }
+            }
+        }
+    }
+}
 
-        Spacer(modifier = Modifier.height(20.dp))
+@Composable
+fun EventCard(event: Event, onJoinClick: (String) -> Unit, isAdmin: Boolean) {
+    // Perform calculations using Long, then convert to Float for the progress bar
+    val isFull = event.registeredCount >= event.totalSlots && event.totalSlots > 0
+    val progress = if (event.totalSlots > 0) {
+        event.registeredCount.toFloat() / event.totalSlots.toFloat()
+    } else {
+        0f
+    }
 
-        Text("Event List:", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = event.eventName,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Date: ${event.eventDate}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = event.eventDescription,
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // UI-only sample events
-        val sampleEvents = listOf("Hackathon 2025", "Tech Talk", "Art Fest")
-
-        sampleEvents.forEach { event ->
-            Card(
+            LinearProgressIndicator(
+                progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 6.dp)
-                    .clickable {
-                        navController.navigate(AppRoute.EventDetail.createRoute(event))
-                    },
-                elevation = CardDefaults.cardElevation(4.dp)
+                    .height(8.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = event,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                Text(
+                    text = "Slots: ${event.registeredCount} / ${event.totalSlots}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                if (!isAdmin) {
+                    Button(
+                        onClick = { onJoinClick(event.id) },
+                        enabled = !isFull
+                    ) {
+                        Text(if (isFull) "Full" else "Join")
+                    }
                 }
             }
         }

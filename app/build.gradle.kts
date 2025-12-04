@@ -10,12 +10,15 @@ plugins {
 
 android {
     namespace = "com.example.campusconnectandcollab"
-    compileSdk = 34
+    // FIX: Updated compileSdk to 36 to meet the new dependency requirements.
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.campusconnectandcollab"
-        minSdk = 21
-        targetSdk = 34
+        // FIX: Updated minSdk to 23 to resolve the Manifest Merger Failed error.
+        minSdk = 23
+        // FIX: Updated targetSdk to 36 to match the compileSdk.
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -25,9 +28,11 @@ android {
         compose = true
     }
 
-    // ONLY FOR OLD COMPILERS — new ones auto-detected
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"  // stable version
+        // NOTE: The compose compiler version is tied to the Kotlin plugin version.
+        // The new `org.jetbrains.kotlin.plugin.compose` plugin often doesn't require this.
+        // If you get errors later, you may need to update or remove this line.
+        kotlinCompilerExtensionVersion = "1.5.14"
     }
 
     compileOptions {

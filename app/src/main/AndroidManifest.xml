@@ -2,6 +2,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!--
+     FIX: Declare that the app uses the camera permission.
+     This is required for the runtime permission request to work.
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!--
+     FIX: Declare that the app uses camera hardware, but it's not required.
+     This allows users on devices without a camera to still install the app.
+    -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"

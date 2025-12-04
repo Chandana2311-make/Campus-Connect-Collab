@@ -25,17 +25,14 @@ import androidx.compose.ui.tooling.preview.Preview
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onLoginClick: (String, String, String) -> Unit = { _, _, _ -> }
+    onLogin: (String, String, String, Boolean) -> Unit = { _, _, _, _ -> }
 ) {
-
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    // System selection
     var eventSelected by remember { mutableStateOf(false) }
     var lostFoundSelected by remember { mutableStateOf(false) }
 
-    // Admin selection
     var isAdmin by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
@@ -124,19 +121,19 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // SYSTEM SELECTION → Event
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
                             checked = eventSelected,
                             onCheckedChange = {
                                 eventSelected = it
-                                if (it) lostFoundSelected = false
+                                if (it) {
+                                    lostFoundSelected = false
+                                }
                             }
                         )
                         Text("Event Updates", fontSize = 15.sp)
                     }
 
-                    // SYSTEM SELECTION → Lost & Found
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
                             checked = lostFoundSelected,
@@ -144,14 +141,13 @@ fun LoginScreen(
                                 lostFoundSelected = it
                                 if (it) {
                                     eventSelected = false
-                                    isAdmin = false   // admin not allowed here
+                                    isAdmin = false
                                 }
                             }
                         )
                         Text("Lost & Found", fontSize = 15.sp)
                     }
 
-                    // ADMIN OPTION (only if Event selected)
                     if (eventSelected) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(
@@ -166,8 +162,6 @@ fun LoginScreen(
 
                     Button(
                         onClick = {
-
-                            // Validation rules
                             when {
                                 !eventSelected && !lostFoundSelected ->
                                     Toast.makeText(context, "Select Event or Lost & Found", Toast.LENGTH_SHORT).show()
@@ -176,15 +170,13 @@ fun LoginScreen(
                                     Toast.makeText(context, "Select only ONE option", Toast.LENGTH_SHORT).show()
 
                                 lostFoundSelected && isAdmin ->
-                                    Toast.makeText(context, "Admin valid only for Event Updates", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Admin allowed only for Events", Toast.LENGTH_SHORT).show()
 
                                 else -> {
-                                    val system =
-                                        if (eventSelected && isAdmin) "event_admin"
-                                        else if (eventSelected) "event_user"
-                                        else "lostfound"
+                                    val selectedSystem =
+                                        if (eventSelected) "events" else "lost_found"
 
-                                    onLoginClick(email, password, system)
+                                    onLogin(email, password, selectedSystem, isAdmin)
                                 }
                             }
                         },
