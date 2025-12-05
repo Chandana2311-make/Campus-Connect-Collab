@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "805890078520",
-    "project_id": "campusconnectandcollabv2",
-    "storage_bucket": "campusconnectandcollabv2.firebasestorage.app"
+    "project_number": "275193251236",
+    "project_id": "campusconnectandcollab",
+    "storage_bucket": "campusconnectandcollab.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:805890078520:android:8b81003a7bbcc2242a33cd",
+        "mobilesdk_app_id": "1:275193251236:android:abaee56b9e8562667f2d31",
         "android_client_info": {
           "package_name": "com.example.campusconnectandcollab"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAks_qpeb_SCdQibB-P-K-kvvXYUbfdUWY"
+          "current_key": "AIzaSyCjVKg5qZnkGaArnTVT8p8-5sFDEyAUagY"
         }
       ],
       "services": {

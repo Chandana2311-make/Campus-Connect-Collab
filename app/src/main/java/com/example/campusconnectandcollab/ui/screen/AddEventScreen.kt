@@ -6,11 +6,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -45,6 +46,7 @@ fun AddEventScreen(
     var eventDescription by remember { mutableStateOf("") }
     var eventDate by remember { mutableStateOf("") }
     var totalSlots by remember { mutableStateOf("") }
+    var formLink by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -52,7 +54,7 @@ fun AddEventScreen(
                 title = { Text("Add New Event") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -62,13 +64,11 @@ fun AddEventScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                "Fill out the details below to create a new event for the community.",
-            )
-
+            // ... (Text fields for name, description, date, slots, form link are all correct) ...
             OutlinedTextField(
                 value = eventName,
                 onValueChange = { eventName = it },
@@ -99,22 +99,34 @@ fun AddEventScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
+            OutlinedTextField(
+                value = formLink,
+                onValueChange = { formLink = it },
+                label = { Text("Google Form Registration Link") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
+            )
+
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
                 onClick = {
                     val slots = totalSlots.toLongOrNull()
-                    if (eventName.isNotBlank() && eventDescription.isNotBlank() && slots != null) {
+                    if (eventName.isNotBlank() && eventDescription.isNotBlank() && slots != null && formLink.isNotBlank()) {
+                        // --- THIS IS THE FIX ---
+                        // We are no longer setting the 'id' field here.
+                        // Firestore will not try to save it, and @DocumentId will work correctly.
                         val newEvent = Event(
                             eventName = eventName,
                             eventDescription = eventDescription,
                             eventDate = eventDate,
                             totalSlots = slots,
-                            registeredCount = 0L // New events start with 0 participants
+                            registeredCount = 0L,
+                            formLink = formLink
                         )
                         eventViewModel.addEvent(newEvent)
                         Toast.makeText(context, "Event created successfully!", Toast.LENGTH_SHORT).show()
-                        navController.popBackStack() // Go back to the previous screen
+                        navController.popBackStack()
                     } else {
                         Toast.makeText(context, "Please fill all fields correctly.", Toast.LENGTH_SHORT).show()
                     }
