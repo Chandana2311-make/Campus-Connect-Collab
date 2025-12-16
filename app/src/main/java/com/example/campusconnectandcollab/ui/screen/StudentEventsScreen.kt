@@ -1,67 +1,91 @@
 package com.example.campusconnectandcollab.ui.screen
 
-import android.content.Intent
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.net.toUri
-import androidx.navigation.NavHostController
+import androidx.navigation.NavController
 import com.example.campusconnectandcollab.ui.models.Event
 import com.example.campusconnectandcollab.ui.viewmodels.EventViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StudentEventsScreen(navController: NavHostController, eventViewModel: EventViewModel) {
-
+fun StudentEventsScreen(
+    navController: NavController,
+    eventViewModel: EventViewModel
+) {
+    // Collect state from the shared ViewModel
     val events by eventViewModel.events.collectAsState()
     val isLoading by eventViewModel.isLoading.collectAsState()
-    val context = LocalContext.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text(
-            text = "Upcoming Events",
-            style = MaterialTheme. typography.headlineLarge,
-            fontWeight = FontWeight.Bold
-        )
+    // **IMPORTANT**: This ensures data is fetched when the screen appears,
+    // even if it was already fetched on the login screen. It's a safety measure.
+    LaunchedEffect(key1 = Unit) {
+        eventViewModel.fetchEvents()
+    }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = "Upcoming Events") }
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+            // Show a loading spinner while data is being fetched
+            if (isLoading) {
                 CircularProgressIndicator()
             }
-        } else if (events.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No upcoming events found.")
+            // If loading is done and the list is empty, show a message
+            else if (events.isEmpty()) {
+                Text(text = "No upcoming events at the moment.")
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(events) { event ->
-                    EventCard(
-                        event = event,
-                        onJoinClicked = {
-                            if (event.formLink.isNotBlank()) {
+            // Once loading is done and there are events, display them
+            else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(items = events, key = { it.id }) { event ->
+                        // Use the special card designed for students
+                        StudentEventCard(
+                            event = event,
+                            onRegister = {
                                 eventViewModel.registerForEvent(event.id)
-                                val intent = Intent(Intent.ACTION_VIEW, event.formLink.toUri())
-                                context.startActivity(intent)
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -69,58 +93,31 @@ fun StudentEventsScreen(navController: NavHostController, eventViewModel: EventV
 }
 
 @Composable
-fun EventCard(event: Event, onJoinClicked: () -> Unit) {
+fun StudentEventCard(event: Event, onRegister: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(6.dp),
-        shape = CardDefaults.shape
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = event.eventName,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold
-            )
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Display all the same event details as the admin view
+            Text(text = event.eventName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(text = "Description: ${event.eventDescription}", style = MaterialTheme.typography.bodyMedium)
+            Text(text = "Date: ${event.eventDate}", style = MaterialTheme.typography.bodyMedium)
+            Text(text = "Slots Filled: ${event.registeredCount} / ${event.totalSlots}", style = MaterialTheme.typography.bodyMedium)
+            Text(text = "Registration Link: ${event.formLink}", style = MaterialTheme.typography.bodySmall, maxLines = 1)
 
-            Text(
-                text = event.eventDescription,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
-            )
+            Spacer(Modifier.height(8.dp))
 
-            Text(
-                text = "Date: ${event.eventDate}",
-                style = MaterialTheme.typography.bodySmall
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+            // The only difference: A "Register" button instead of Edit/Delete
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.End
             ) {
-                Column {
-                    Text(
-                        text = "SLOTS FILLED",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "${event.registeredCount} / ${event.totalSlots}",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Button(
-                    onClick = onJoinClicked,
-                    enabled = event.registeredCount < event.totalSlots && event.formLink.isNotBlank()
-                ) {
-                    Text(
-                        text = if (event.registeredCount < event.totalSlots) "JOIN NOW" else "SLOTS FULL",
-                        fontSize = 16.sp
-                    )
+                Button(onClick = onRegister) {
+                    Text(text = "Register")
                 }
             }
         }

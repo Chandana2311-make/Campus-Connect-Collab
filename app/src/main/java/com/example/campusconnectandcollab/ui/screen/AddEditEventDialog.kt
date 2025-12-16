@@ -1,11 +1,9 @@
 package com.example.campusconnectandcollab.ui.screen
 
-// FIX: Separated the package and import statements onto their own lines.
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -17,8 +15,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.campusconnectandcollab.ui.models.Event
+import com.google.firebase.Timestamp // IMPORT THIS
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditEventDialog(
     event: Event?, // The existing event to edit, or null to add a new one
@@ -27,7 +25,8 @@ fun AddEditEventDialog(
 ) {
     var eventName by remember { mutableStateOf(event?.eventName ?: "") }
     var eventDescription by remember { mutableStateOf(event?.eventDescription ?: "") }
-    var eventDate by remember { mutableStateOf(event?.eventDate ?: "") }
+    // 1. REMOVE the state for eventDate. It's now automatic or pre-existing.
+    // var eventDate by remember { mutableStateOf(event?.eventDate ?: "") } // DELETE THIS LINE
     var totalSlots by remember { mutableStateOf((event?.totalSlots ?: 0).toString()) }
 
     AlertDialog(
@@ -45,11 +44,12 @@ fun AddEditEventDialog(
                     onValueChange = { eventDescription = it },
                     label = { Text("Description") }
                 )
-                OutlinedTextField(
-                    value = eventDate,
-                    onValueChange = { eventDate = it },
-                    label = { Text("Date (e.g., YYYY-MM-DD)") }
-                )
+                // 2. REMOVE the text field for the date.
+                // OutlinedTextField(
+                //     value = eventDate,
+                //     onValueChange = { eventDate = it },
+                //     label = { Text("Date (e.g., YYYY-MM-DD)") }
+                // )
                 OutlinedTextField(
                     value = totalSlots,
                     onValueChange = { totalSlots = it },
@@ -60,15 +60,17 @@ fun AddEditEventDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                val newEvent = Event(
+                // 3. FIX the event creation logic
+                val newOrUpdatedEvent = Event(
                     id = event?.id ?: "", // Keep the old ID if editing
                     eventName = eventName,
                     eventDescription = eventDescription,
-                    eventDate = eventDate,
-                    totalSlots = totalSlots.toLongOrNull() ?: 0L, // Convert to Long for Firestore
-                    registeredCount = event?.registeredCount ?: 0L // Keep old count if editing
+                    // If editing, keep the original date. If adding, 'null' will trigger @ServerTimestamp.
+                    eventDate = event?.eventDate,
+                    totalSlots = totalSlots.toLongOrNull() ?: 0L,
+                    registeredCount = event?.registeredCount ?: 0L
                 )
-                onSave(newEvent)
+                onSave(newOrUpdatedEvent)
             }) {
                 Text("Save")
             }

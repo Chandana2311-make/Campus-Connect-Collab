@@ -44,7 +44,8 @@ fun AddEventScreen(
 
     var eventName by remember { mutableStateOf("") }
     var eventDescription by remember { mutableStateOf("") }
-    var eventDate by remember { mutableStateOf("") }
+    // var eventDate by remember { mutableStateOf("") } // 1. REMOVE a state for the date
+    var location by remember { mutableStateOf("") } // Added location field
     var totalSlots by remember { mutableStateOf("") }
     var formLink by remember { mutableStateOf("") }
 
@@ -68,7 +69,6 @@ fun AddEventScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // ... (Text fields for name, description, date, slots, form link are all correct) ...
             OutlinedTextField(
                 value = eventName,
                 onValueChange = { eventName = it },
@@ -84,10 +84,18 @@ fun AddEventScreen(
                 minLines = 3
             )
 
+            // 2. REMOVE the OutlinedTextField for the date. It is now automatic.
+            // OutlinedTextField(
+            //     value = eventDate,
+            //     onValueChange = { eventDate = it },
+            //     label = { Text("Event Date (e.g., YYYY-MM-DD)") },
+            //     modifier = Modifier.fillMaxWidth()
+            // )
+
             OutlinedTextField(
-                value = eventDate,
-                onValueChange = { eventDate = it },
-                label = { Text("Event Date (e.g., YYYY-MM-DD)") },
+                value = location,
+                onValueChange = { location = it },
+                label = { Text("Location / Venue") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -113,16 +121,16 @@ fun AddEventScreen(
                 onClick = {
                     val slots = totalSlots.toLongOrNull()
                     if (eventName.isNotBlank() && eventDescription.isNotBlank() && slots != null && formLink.isNotBlank()) {
-                        // --- THIS IS THE FIX ---
-                        // We are no longer setting the 'id' field here.
-                        // Firestore will not try to save it, and @DocumentId will work correctly.
+                        // 3. THIS IS THE FINAL FIX
+                        // Create the Event object WITHOUT setting eventDate.
+                        // @ServerTimestamp in the model will handle it automatically.
                         val newEvent = Event(
                             eventName = eventName,
                             eventDescription = eventDescription,
-                            eventDate = eventDate,
+                            location = location,
                             totalSlots = slots,
-                            registeredCount = 0L,
                             formLink = formLink
+                            // Note: eventDate is not set here. It's automatic!
                         )
                         eventViewModel.addEvent(newEvent)
                         Toast.makeText(context, "Event created successfully!", Toast.LENGTH_SHORT).show()

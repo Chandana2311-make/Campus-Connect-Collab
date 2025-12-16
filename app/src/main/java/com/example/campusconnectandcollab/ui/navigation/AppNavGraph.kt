@@ -7,7 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.campusconnectandcollab.LoginScreen
 import com.example.campusconnectandcollab.ui.screen.AddEventScreen
-import com.example.campusconnectandcollab.ui.screen.AdminDashboardScreen
+import com.example.campusconnectandcollab.ui.screen.EventListScreen
 import com.example.campusconnectandcollab.ui.screen.StudentEventsScreen
 import com.example.campusconnectandcollab.ui.screens.LostFoundScreen
 import com.example.campusconnectandcollab.ui.viewmodels.EventViewModel
@@ -15,19 +15,20 @@ import com.example.campusconnectandcollab.ui.viewmodels.EventViewModel
 @Composable
 fun AppNavGraph(navController: NavHostController) {
 
-    // --- Create the ViewModel here, at the highest level. This is the correct pattern. ---
     val eventViewModel: EventViewModel = viewModel()
 
-    // The start destination should always be the login screen.
     NavHost(navController = navController, startDestination = "login") {
 
         composable("login") {
             LoginScreen { _, _, selectedSystem, isAdmin ->
                 when (selectedSystem) {
                     "events" -> {
+                        // --- THIS IS THE FIX ---
+                        // We tell the ViewModel to start fetching events RIGHT BEFORE we navigate.
+                        eventViewModel.fetchEvents()
+
                         val route = if (isAdmin) "admin_dashboard" else "student_events"
                         navController.navigate(route) {
-                            // Clear the back stack so the user can't go back to login
                             popUpTo("login") { inclusive = true }
                         }
                     }
@@ -40,26 +41,24 @@ fun AppNavGraph(navController: NavHostController) {
             }
         }
 
-        // --- Define all your other screens at the top level ---
-
         composable("admin_dashboard") {
-            AdminDashboardScreen(
+            EventListScreen(
                 navController = navController,
-                eventViewModel = eventViewModel // Pass the single ViewModel instance
+                eventViewModel = eventViewModel
             )
         }
 
         composable("student_events") {
             StudentEventsScreen(
                 navController = navController,
-                eventViewModel = eventViewModel // Pass the single ViewModel instance
+                eventViewModel = eventViewModel
             )
         }
 
         composable("add_event") {
             AddEventScreen(
                 navController = navController,
-                eventViewModel = eventViewModel // Pass the single ViewModel instance
+                eventViewModel = eventViewModel
             )
         }
 
