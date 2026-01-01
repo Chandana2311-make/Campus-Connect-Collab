@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "128073945718",
+    "project_id": "pblcampus",
+    "storage_bucket": "pblcampus.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:128073945718:android:bb9bdf7428c3ccaefe0557",
+        "android_client_info": {
+          "package_name": "com.example.campusconnectandcollab"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD76xSwUXLKMQNIHUxUt271oPYU5S2A3Mc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
