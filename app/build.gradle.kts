@@ -8,17 +8,22 @@ plugins {
 
 android {
     namespace = "com.example.campusconnectandcollab"
-    // FIX: Using 35 (Android 15) because 36 is not yet a stable release
-    compileSdk = 35
+
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.campusconnectandcollab"
         minSdk = 24
-        targetSdk = 35
+
+        // CHANGE THIS FROM 35 TO 36
+        targetSdk = 36
+
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+
+
 
     buildFeatures {
         compose = true
