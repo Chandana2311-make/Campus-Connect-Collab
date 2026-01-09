@@ -21,6 +21,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.campusconnectandcollab.ui.models.Event
 import com.example.campusconnectandcollab.ui.viewmodels.EventViewModel
@@ -38,21 +39,37 @@ import com.example.campusconnectandcollab.ui.viewmodels.EventViewModel
 @Composable
 fun AddEventScreen(
     navController: NavController,
-    eventViewModel: EventViewModel = viewModel()
+    eventViewModel: EventViewModel,
+    eventId: String? = null // ✅ if null -> create, else -> edit
 ) {
     val context = LocalContext.current
 
+    val events by eventViewModel.events.collectAsState()
+
+    val existingEvent = events.firstOrNull { it.id == eventId }
+    val isEditMode = existingEvent != null
+
     var eventName by remember { mutableStateOf("") }
     var eventDescription by remember { mutableStateOf("") }
-    // var eventDate by remember { mutableStateOf("") } // 1. REMOVE a state for the date
-    var location by remember { mutableStateOf("") } // Added location field
+    var location by remember { mutableStateOf("") }
     var totalSlots by remember { mutableStateOf("") }
     var formLink by remember { mutableStateOf("") }
+
+    // ✅ Prefill fields when editing
+    LaunchedEffect(existingEvent) {
+        if (existingEvent != null) {
+            eventName = existingEvent.eventName
+            eventDescription = existingEvent.eventDescription
+            location = existingEvent.location
+            totalSlots = existingEvent.totalSlots.toString()
+            formLink = existingEvent.formLink
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add New Event") },
+                title = { Text(if (isEditMode) "Edit Event" else "Add New Event") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -84,14 +101,6 @@ fun AddEventScreen(
                 minLines = 3
             )
 
-            // 2. REMOVE the OutlinedTextField for the date. It is now automatic.
-            // OutlinedTextField(
-            //     value = eventDate,
-            //     onValueChange = { eventDate = it },
-            //     label = { Text("Event Date (e.g., YYYY-MM-DD)") },
-            //     modifier = Modifier.fillMaxWidth()
-            // )
-
             OutlinedTextField(
                 value = location,
                 onValueChange = { location = it },
@@ -120,28 +129,50 @@ fun AddEventScreen(
             Button(
                 onClick = {
                     val slots = totalSlots.toLongOrNull()
-                    if (eventName.isNotBlank() && eventDescription.isNotBlank() && slots != null && formLink.isNotBlank()) {
-                        // 3. THIS IS THE FINAL FIX
-                        // Create the Event object WITHOUT setting eventDate.
-                        // @ServerTimestamp in the model will handle it automatically.
-                        val newEvent = Event(
-                            eventName = eventName,
-                            eventDescription = eventDescription,
-                            location = location,
-                            totalSlots = slots,
-                            formLink = formLink
-                            // Note: eventDate is not set here. It's automatic!
-                        )
-                        eventViewModel.addEvent(newEvent)
-                        Toast.makeText(context, "Event created successfully!", Toast.LENGTH_SHORT).show()
-                        navController.popBackStack()
+
+                    if (
+                        eventName.isNotBlank() &&
+                        eventDescription.isNotBlank() &&
+                        location.isNotBlank() &&
+                        slots != null &&
+                        formLink.isNotBlank()
+                    ) {
+                        if (isEditMode && existingEvent != null) {
+                            // ✅ UPDATE (keep eventDate untouched!)
+                            val updated = existingEvent.copy(
+                                eventName = eventName,
+                                eventDescription = eventDescription,
+                                location = location,
+                                totalSlots = slots,
+                                formLink = formLink
+                                // eventDate remains same inside existingEvent
+                            )
+
+                            eventViewModel.updateEvent(updated)
+                            Toast.makeText(context, "Event updated successfully!", Toast.LENGTH_SHORT).show()
+                            navController.popBackStack()
+                        } else {
+                            // ✅ CREATE NEW
+                            val newEvent = Event(
+                                eventName = eventName,
+                                eventDescription = eventDescription,
+                                location = location,
+                                totalSlots = slots,
+                                formLink = formLink
+                                // eventDate is server timestamp (auto)
+                            )
+
+                            eventViewModel.addEvent(newEvent)
+                            Toast.makeText(context, "Event created successfully!", Toast.LENGTH_SHORT).show()
+                            navController.popBackStack()
+                        }
                     } else {
                         Toast.makeText(context, "Please fill all fields correctly.", Toast.LENGTH_SHORT).show()
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("CREATE EVENT")
+                Text(if (isEditMode) "UPDATE EVENT" else "CREATE EVENT")
             }
         }
     }

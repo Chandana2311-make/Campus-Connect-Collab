@@ -1,107 +1,119 @@
-package com.example.campusconnectandcollab.ui.screens
+package com.example.campusconnectandcollab.ui.screen
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.foundation.clickable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.campusconnectandcollab.ui.viewmodels.EventViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventDetailScreen(
+    eventId: String,
     navController: NavController,
-    eventId: String
+    eventViewModel: EventViewModel
 ) {
+    val context = LocalContext.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFFEEF1FF), Color(0xFFDDE7FF))
-                )
+    // This assumes your ViewModel exposes a Flow/List of events. We'll adapt if yours is different.
+    val events by eventViewModel.events.collectAsState(initial = emptyList())
+
+    val event = events.firstOrNull { it.id == eventId }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Event Details") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
             )
-            .padding(16.dp)
-    ) {
+        }
+    ) { paddingValues ->
+        if (event == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Event not found.")
+            }
+            return@Scaffold
+        }
 
-        // Back button
-        Text(
-            text = "< Back",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.primary,
+        Column(
             modifier = Modifier
-                .clickable { navController.popBackStack() }
-                .padding(bottom = 16.dp)
-        )
-
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(10.dp),
-            modifier = Modifier.fillMaxWidth()
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Text(event.eventName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text(event.location, style = MaterialTheme.typography.bodyMedium)
 
-                Text(
-                    text = "Event #$eventId",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
-                )
+            Divider()
 
-                Spacer(modifier = Modifier.height(12.dp))
+            Text("About", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(event.eventDescription, style = MaterialTheme.typography.bodyMedium)
 
-                Text(
-                    text = "Event Title: Tech Talk on AI Innovations",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+            Spacer(modifier = Modifier.height(6.dp))
 
-                Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Slots: ${event.registeredCount} / ${event.totalSlots}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold
+            )
 
-                Text(
-                    text = "Date: November 25, 2025",
-                    fontSize = 16.sp
-                )
+            Spacer(modifier = Modifier.height(10.dp))
 
-                Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = {
+                    val isFull = event.registeredCount >= event.totalSlots
+                    if (isFull) {
+                        Toast.makeText(context, "Event is full!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        // We'll implement this in ViewModel next
+                        eventViewModel.registerForEvent(event.id)
+                        Toast.makeText(context, "Registered successfully!", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = event.registeredCount < event.totalSlots
+            ) {
+                Text(if (event.registeredCount < event.totalSlots) "Join / Register" else "Full")
+            }
+            OutlinedButton(
+                onClick = { navController.navigate("event_regs/${event.id}") },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("View Registrations (Admin)")
+            }
 
-                Text(
-                    text = "Time: 10:00 AM - 12:00 PM",
-                    fontSize = 16.sp
-                )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Venue: DSATM Seminar Hall",
-                    fontSize = 16.sp
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "Description:",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = "Join us for a deep dive into cutting-edge AI research, real industrial applications, and future careers in machine intelligence.",
-                    fontSize = 15.sp,
-                    lineHeight = 22.sp
-                )
+            OutlinedButton(
+                onClick = {
+                    // Optional: open Google Form link later
+                    Toast.makeText(context, "Form link: ${event.formLink}", Toast.LENGTH_LONG).show()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Open Registration Form")
             }
         }
     }

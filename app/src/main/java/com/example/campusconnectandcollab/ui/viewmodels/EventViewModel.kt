@@ -27,11 +27,16 @@ class EventViewModel : ViewModel() {
     init {
         fetchEvents()
     }
+    private val _currentUserEmail = MutableStateFlow("")
+    val currentUserEmail: StateFlow<String> = _currentUserEmail
+
+    fun setCurrentUserEmail(email: String) {
+        _currentUserEmail.value = email.trim()
+    }
 
     fun fetchEvents() {
         _isLoading.value = true
-        // --- RE-ENABLING SORTING ---
-        // This will now work because your index, rules, and billing are correct.
+
         firestore.collection("events")
             .orderBy("eventDate", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
@@ -52,7 +57,6 @@ class EventViewModel : ViewModel() {
                     try {
                         val event = document.toObject(Event::class.java)
                         if (event != null) {
-                            // This correctly assigns the unique ID to each event object
                             eventList.add(event.copy(id = document.id))
                         } else {
                             Log.w("FirestoreData", "Failed to convert document: ${document.id}")
@@ -66,6 +70,67 @@ class EventViewModel : ViewModel() {
                 _isLoading.value = false
             }
     }
+
+    /**
+     * ✅ Correct Firestore-safe register:
+     * Uses atomic increment to avoid race conditions.
+     */
+    fun registerForEvent(eventId: String) {
+        if (eventId.isBlank()) return
+
+        val email = _currentUserEmail.value
+        if (email.isBlank()) {
+            Log.e("FirestoreAction", "No user email found. Cannot register.")
+            return
+        }
+
+        // Use a safe Firestore document id (no weird chars)
+        val userKey = email
+            .lowercase()
+            .replace(".", "_")
+            .replace("@", "_at_")
+
+        viewModelScope.launch {
+            try {
+                val eventRef = firestore.collection("events").document(eventId)
+                val regRef = eventRef.collection("registrations").document(userKey)
+
+                firestore.runTransaction { tx ->
+                    val eventSnap = tx.get(eventRef)
+                    val regSnap = tx.get(regRef)
+
+                    val totalSlots = eventSnap.getLong("totalSlots") ?: 0L
+                    val registeredCount = eventSnap.getLong("registeredCount") ?: 0L
+
+                    // ✅ prevent double registration
+                    if (regSnap.exists()) {
+                        throw IllegalStateException("Already registered")
+                    }
+
+                    // ✅ prevent overflow
+                    if (registeredCount >= totalSlots) {
+                        throw IllegalStateException("Event full")
+                    }
+
+                    // ✅ create registration doc
+                    tx.set(regRef, mapOf(
+                        "email" to email,
+                        "registeredAt" to FieldValue.serverTimestamp()
+                    ))
+
+                    // ✅ increment count atomically
+                    tx.update(eventRef, "registeredCount", FieldValue.increment(1))
+
+                    null
+                }.await()
+
+                Log.d("FirestoreAction", "Registered successfully for $eventId")
+            } catch (e: Exception) {
+                Log.e("FirestoreAction", "Register failed: ${e.message}", e)
+            }
+        }
+    }
+
 
     fun addEvent(event: Event) {
         viewModelScope.launch {
@@ -96,26 +161,13 @@ class EventViewModel : ViewModel() {
 
     fun deleteEvent(eventId: String) {
         if (eventId.isBlank()) return
+
         viewModelScope.launch {
             try {
                 firestore.collection("events").document(eventId).delete().await()
                 Log.d("FirestoreAction", "Successfully deleted event: $eventId")
             } catch (e: Exception) {
                 Log.e("FirestoreAction", "Failed to delete event: $eventId", e)
-            }
-        }
-    }
-
-    fun registerForEvent(eventId: String) {
-        if (eventId.isBlank()) return
-
-        viewModelScope.launch {
-            try {
-                val eventRef = firestore.collection("events").document(eventId)
-                eventRef.update("registeredCount", FieldValue.increment(1)).await()
-                Log.d("FirestoreAction", "Successfully incremented registration for event: $eventId")
-            } catch (e: Exception) {
-                Log.e("FirestoreAction", "Failed to register for event: $eventId", e)
             }
         }
     }

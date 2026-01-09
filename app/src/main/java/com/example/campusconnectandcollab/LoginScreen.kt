@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,27 +13,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onLogin: (String, String, String, Boolean) -> Unit = { _, _, _, _ -> }
+    onCreateAccountClick: () -> Unit,
+    onLogin: (String, String, String, Boolean) -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
     var eventSelected by remember { mutableStateOf(false) }
     var lostFoundSelected by remember { mutableStateOf(false) }
-
     var isAdmin by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
@@ -49,22 +49,24 @@ fun LoginScreen(
                 )
             )
     ) {
-
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
             Spacer(modifier = Modifier.height(60.dp))
 
             Box(
-                modifier = Modifier.size(100.dp)
+                modifier = Modifier
+                    .size(100.dp)
                     .clip(CircleShape)
                     .background(Color.White.copy(alpha = 0.9f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    "C",
+                    text = "C",
                     fontSize = 42.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF6C63FF)
@@ -74,7 +76,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(15.dp))
 
             Text(
-                "Campus Connect & Collab",
+                text = "Campus Connect & Collab",
                 fontSize = 24.sp,
                 color = Color.White,
                 fontWeight = FontWeight.ExtraBold,
@@ -82,7 +84,7 @@ fun LoginScreen(
             )
 
             Text(
-                "Login to continue",
+                text = "Login to continue",
                 fontSize = 15.sp,
                 color = Color.White.copy(alpha = 0.9f)
             )
@@ -90,12 +92,13 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(30.dp))
 
             Card(
-                modifier = Modifier.fillMaxWidth().padding(5.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(5.dp),
                 shape = RoundedCornerShape(20.dp),
                 elevation = CardDefaults.cardElevation(12.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
-
                 Column(
                     modifier = Modifier.padding(22.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -126,9 +129,7 @@ fun LoginScreen(
                             checked = eventSelected,
                             onCheckedChange = {
                                 eventSelected = it
-                                if (it) {
-                                    lostFoundSelected = false
-                                }
+                                if (it) lostFoundSelected = false
                             }
                         )
                         Text("Event Updates", fontSize = 15.sp)
@@ -173,20 +174,29 @@ fun LoginScreen(
                                     Toast.makeText(context, "Admin allowed only for Events", Toast.LENGTH_SHORT).show()
 
                                 else -> {
-                                    val selectedSystem =
-                                        if (eventSelected) "events" else "lost_found"
-
+                                    val selectedSystem = if (eventSelected) "events" else "lost_found"
                                     onLogin(email, password, selectedSystem, isAdmin)
                                 }
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1A1A40)
-                        ),
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A1A40)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
                         shape = RoundedCornerShape(14.dp)
                     ) {
                         Text("Login", fontSize = 19.sp, color = Color(0xFF4EE1C1))
+                    }
+
+                    // ✅ Make it clearly visible
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    TextButton(onClick = onCreateAccountClick) {
+                        Text(
+                            text = "Create a new account",
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF6C63FF)
+                        )
                     }
                 }
             }
@@ -197,5 +207,8 @@ fun LoginScreen(
 @Preview(showSystemUi = true)
 @Composable
 fun PreviewLoginScreen() {
-    LoginScreen()
+    LoginScreen(
+        onCreateAccountClick = {},
+        onLogin = { _, _, _, _ -> }
+    )
 }

@@ -1,5 +1,7 @@
 package com.example.campusconnectandcollab.ui.screen
 
+import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,11 +29,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.campusconnectandcollab.ui.models.Event
 import com.example.campusconnectandcollab.ui.viewmodels.EventViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,13 +46,12 @@ fun StudentEventsScreen(
     navController: NavController,
     eventViewModel: EventViewModel
 ) {
-    // Collect state from the shared ViewModel
+    val context = LocalContext.current
+
     val events by eventViewModel.events.collectAsState()
     val isLoading by eventViewModel.isLoading.collectAsState()
 
-    // **IMPORTANT**: This ensures data is fetched when the screen appears,
-    // even if it was already fetched on the login screen. It's a safety measure.
-    LaunchedEffect(key1 = Unit) {
+    LaunchedEffect(Unit) {
         eventViewModel.fetchEvents()
     }
 
@@ -62,29 +68,37 @@ fun StudentEventsScreen(
                 .padding(paddingValues),
             contentAlignment = Alignment.Center
         ) {
-            // Show a loading spinner while data is being fetched
-            if (isLoading) {
-                CircularProgressIndicator()
-            }
-            // If loading is done and the list is empty, show a message
-            else if (events.isEmpty()) {
-                Text(text = "No upcoming events at the moment.")
-            }
-            // Once loading is done and there are events, display them
-            else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(items = events, key = { it.id }) { event ->
-                        // Use the special card designed for students
-                        StudentEventCard(
-                            event = event,
-                            onRegister = {
-                                eventViewModel.registerForEvent(event.id)
-                            }
-                        )
+            when {
+                isLoading -> CircularProgressIndicator()
+
+                events.isEmpty() -> Text(text = "No upcoming events at the moment.")
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        items(items = events, key = { it.id }) { event ->
+                            StudentEventCard(
+                                event = event,
+                                onOpenDetails = {
+                                    if (event.id.isNotBlank()) {
+                                        navController.navigate("event_detail/${event.id}")
+                                    } else {
+                                        Toast.makeText(context, "Event ID missing", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                onRegister = {
+                                    if (event.registeredCount >= event.totalSlots) {
+                                        Toast.makeText(context, "Event is full!", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        eventViewModel.registerForEvent(event.id)
+                                        Toast.makeText(context, "Registered!", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -93,33 +107,82 @@ fun StudentEventsScreen(
 }
 
 @Composable
-fun StudentEventCard(event: Event, onRegister: () -> Unit) {
+fun StudentEventCard(
+    event: Event,
+    onOpenDetails: () -> Unit,
+    onRegister: () -> Unit
+) {
+    val dateText = rememberEventDateText(event)
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpenDetails() }, // ✅ whole card clickable
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Display all the same event details as the admin view
-            Text(text = event.eventName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text(text = "Description: ${event.eventDescription}", style = MaterialTheme.typography.bodyMedium)
-            Text(text = "Date: ${event.eventDate}", style = MaterialTheme.typography.bodyMedium)
-            Text(text = "Slots Filled: ${event.registeredCount} / ${event.totalSlots}", style = MaterialTheme.typography.bodyMedium)
-            Text(text = "Registration Link: ${event.formLink}", style = MaterialTheme.typography.bodySmall, maxLines = 1)
+            Text(
+                text = event.eventName,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
 
-            Spacer(Modifier.height(8.dp))
+            // Description: show short preview (cleaner)
+            Text(
+                text = event.eventDescription,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+            )
 
-            // The only difference: A "Register" button instead of Edit/Delete
+            // Date + location line
+            Text(
+                text = "${dateText} • ${event.location.ifBlank { "Venue TBA" }}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+            )
+
+            // Slots
+            Text(
+                text = "Slots: ${event.registeredCount} / ${event.totalSlots}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Spacer(Modifier.height(6.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                Button(onClick = onRegister) {
-                    Text(text = "Register")
+                Button(
+                    onClick = onRegister,
+                    enabled = event.registeredCount < event.totalSlots
+                ) {
+                    Text(text = if (event.registeredCount < event.totalSlots) "Register" else "Full")
                 }
             }
         }
+    }
+}
+
+/**
+ * ✅ Formats Firestore Timestamp nicely.
+ * - If date is null (still being written), shows "Date pending"
+ */
+@Composable
+private fun rememberEventDateText(event: Event): String {
+    val ts = event.eventDate
+    return if (ts == null) {
+        "Date pending"
+    } else {
+        val date: Date = ts.toDate()
+        val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+        sdf.format(date)
     }
 }
